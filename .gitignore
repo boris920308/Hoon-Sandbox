@@ -1,34 +1,35 @@
-# Gradle files
-.gradle/
-build/
-
-# Local configuration file (sdk path, etc)
-local.properties
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.aab
-*.apk
-output-metadata.json
-
-# IntelliJ
+# [기존 항목 포함: Android, Kotlin, Java, OS 공통]
 *.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+.gradle
+/local.properties
+/.idea/
+.externalNativeBuild
+.cxx
+build/
+captures/
+.DS_Store
+Thumbs.db
 
-# Keystore files
+# --- Firebase & Google Services ---
+# Google 서비스 설정 파일 (오픈소스라면 필수 제외, 보안상 주의)
+# google-services.json 
+
+# --- Room Database ---
+# Room에서 생성하는 스키마 내보내기 파일 (버전 관리 시 제외 권장)
+# 만약 스키마 히스토리를 추적하고 싶다면 이 라인을 삭제하세요.
+schemas/
+
+# --- Jetpack & Android Tooling ---
+# 벤치마크 결과물
+*-benchmark-results.json
+
+# Navigation Editor 설정
+.idea/navEditor.xml
+
+# --- Secrets & Keys (매우 중요) ---
+# API Key 등을 관리하는 파일들
+secrets.properties
 *.jks
 *.keystore
-
-# Google Services (e.g. APIs or Firebase)
-google-services.json
-
-# Android Profiling
-*.hprof
+*.p12
+*.key
