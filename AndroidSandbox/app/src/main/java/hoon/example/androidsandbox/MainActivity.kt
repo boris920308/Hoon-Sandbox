@@ -57,13 +57,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun CounterScreen() {
-    // 값이 변하면 UI가 자동으로 업데이트 되도록 '상태'로 선언
-    var count by remember { mutableStateOf(0) }
     var name by remember { mutableStateOf("") }
 
     // 1. 이름 리스트를 저장할 상태 (가변 리스트)
     // remember { mutableStateListOf<String>() }는 리스트 내부 요소가 추가/삭제될 때 UI를 갱신해줍니다.
     val nameList = remember { mutableStateListOf<String>() }
+
+    // count를 별도 상태가 아니라 리스트의 크기로부터 계산합니다.
+    // nameList가 변경될 때마다 이 값도 자동으로 다시 계산됩니다.
+    val count = nameList.size
 
     val backgroundColor = if (count >= 10) {
         Color(0xFFE1F5FE)
@@ -96,7 +98,6 @@ fun CounterScreen() {
         Button(onClick = {
             if (name.isNotBlank()) {
                 nameList.add(name) // 리스트에 이름 추가
-                count++            // 카운트 증가
                 name = ""          // 입력창 비우기
             }
         }) {
