@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,14 +43,28 @@ class MainActivity : ComponentActivity() {
 fun CounterScreen() {
     // 값이 변하면 UI가 자동으로 업데이트 되도록 '상태'로 선언
     var count by remember { mutableStateOf(0) }
+    var name by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        TextField(
+            value = name,
+            onValueChange = { newText -> name = newText },
+            label = { Text("이름을 입력하세요") },
+            placeholder = { Text("홍길동") }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Text(
-            text = "현재 숫자: $count",
+            text = if (name.isEmpty()) {
+                "현재 숫자: $count"
+            } else {
+                "${name}님의 숫자: $count"
+            },
             style = MaterialTheme.typography.headlineMedium
         )
         Spacer(modifier = Modifier.height(16.dp))
