@@ -27,16 +27,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import hoon.example.androidsandbox.ui.theme.AndroidSandboxTheme
 
 class MainActivity : ComponentActivity() {
@@ -56,16 +52,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun CounterScreen() {
-    var name by remember { mutableStateOf("") }
-
-    // 1. 이름 리스트를 저장할 상태 (가변 리스트)
-    // remember { mutableStateListOf<String>() }는 리스트 내부 요소가 추가/삭제될 때 UI를 갱신해줍니다.
-    val nameList = remember { mutableStateListOf<String>() }
-
-    // count를 별도 상태가 아니라 리스트의 크기로부터 계산합니다.
-    // nameList가 변경될 때마다 이 값도 자동으로 다시 계산됩니다.
-    val count = nameList.size
+fun CounterScreen(viewModel: CounterViewModel = viewModel()) {
+    // remember 변수 -> viewModel의 데이터 사용
+    val count = viewModel.nameList.size
 
     val backgroundColor = if (count >= 10) {
         Color(0xFFE1F5FE)
@@ -80,8 +69,8 @@ fun CounterScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         TextField(
-            value = name,
-            onValueChange = { name = it },
+            value = viewModel.name,
+            onValueChange = { viewModel.name = it },
             label = { Text("이름을 입력하세요") }
         )
 
@@ -96,12 +85,9 @@ fun CounterScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(onClick = {
-            if (name.isNotBlank()) {
-                nameList.add(name) // 리스트에 이름 추가
-                name = ""          // 입력창 비우기
-            }
+            viewModel.addName()
         }) {
-            Text("리스트에 추가 및 더하기")
+            Text("리스트에 추가")
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -114,10 +100,10 @@ fun CounterScreen() {
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             // 3. items 함수를 사용해 리스트의 각 요소를 Composable로 변환
-            items(nameList) { savedName ->
+            items(viewModel.nameList) { savedName ->
                 NameItem(
                     name = savedName,
-                    onDeleteClick = { nameList.remove(savedName) } // 삭제 로직 전달
+                    onDeleteClick = { viewModel.removeName(savedName) } // 삭제 로직 전달
                 )
             }
         }
