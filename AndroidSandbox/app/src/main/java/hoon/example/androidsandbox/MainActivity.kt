@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import hoon.example.androidsandbox.ui.theme.AndroidSandboxTheme
@@ -45,8 +47,18 @@ fun CounterScreen() {
     var count by remember { mutableStateOf(0) }
     var name by remember { mutableStateOf("") }
 
+    // 1. 상태에 따라 배경색을 설정
+    val backgroundColor = if (count >= 10) {
+        Color(0xFFE1F5FE)
+    } else {
+        Color.Transparent
+    }
+
+    // 2. Modifier.background()를 통해 배경적용
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -67,7 +79,17 @@ fun CounterScreen() {
             },
             style = MaterialTheme.typography.headlineMedium
         )
+
+        if (count >= 10) {
+            Text(
+                text = "목표달성 ! 배경색 변경",
+                color = Color.Blue,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
+
         Button(onClick = {
             count++
         }) {
