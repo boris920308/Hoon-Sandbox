@@ -20,14 +20,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import hoon.example.androidsandbox.domain.counter.model.Name
 import hoon.example.androidsandbox.presentation.counter.component.NameItem
 import hoon.example.androidsandbox.ui.theme.AndroidSandboxTheme
 
 @Composable
 fun CounterScreen(
-    viewModel: CounterViewModel = viewModel(factory = CounterViewModel.provideFactory())
+    viewModel: CounterViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -44,7 +45,7 @@ private fun CounterScreenContent(
     uiState: CounterUiState,
     onNameChange: (String) -> Unit,
     onAddClick: () -> Unit,
-    onDeleteClick: (hoon.example.androidsandbox.domain.counter.model.Name) -> Unit
+    onDeleteClick: (Name) -> Unit
 ) {
     val backgroundColor = if (uiState.isGoalReached) {
         Color(0xFFE1F5FE)

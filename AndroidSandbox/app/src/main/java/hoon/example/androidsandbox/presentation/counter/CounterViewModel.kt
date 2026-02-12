@@ -1,11 +1,9 @@
 package hoon.example.androidsandbox.presentation.counter
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import hoon.example.androidsandbox.data.counter.repository.NameRepositoryImpl
+import dagger.hilt.android.lifecycle.HiltViewModel
 import hoon.example.androidsandbox.domain.counter.model.Name
-import hoon.example.androidsandbox.domain.counter.repository.NameRepository
 import hoon.example.androidsandbox.domain.counter.usecase.AddNameUseCase
 import hoon.example.androidsandbox.domain.counter.usecase.GetNamesUseCase
 import hoon.example.androidsandbox.domain.counter.usecase.RemoveNameUseCase
@@ -14,8 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class CounterViewModel(
+@HiltViewModel
+class CounterViewModel @Inject constructor(
     private val getNamesUseCase: GetNamesUseCase,
     private val addNameUseCase: AddNameUseCase,
     private val removeNameUseCase: RemoveNameUseCase
@@ -57,21 +57,6 @@ class CounterViewModel(
     fun removeName(name: Name) {
         viewModelScope.launch {
             removeNameUseCase(name)
-        }
-    }
-
-    companion object {
-        fun provideFactory(
-            repository: NameRepository = NameRepositoryImpl()
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return CounterViewModel(
-                    getNamesUseCase = GetNamesUseCase(repository),
-                    addNameUseCase = AddNameUseCase(repository),
-                    removeNameUseCase = RemoveNameUseCase(repository)
-                ) as T
-            }
         }
     }
 }

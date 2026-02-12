@@ -6,8 +6,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import javax.inject.Inject
 
-class NameRepositoryImpl : NameRepository {
+class NameRepositoryImpl @Inject constructor() : NameRepository {
 
     private val _names = MutableStateFlow<List<Name>>(emptyList())
 
