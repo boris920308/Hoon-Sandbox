@@ -1,9 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
 }
 
 android {
@@ -20,6 +29,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // AWS KVS Config
+        buildConfigField("String", "AWS_ACCESS_KEY", "\"${localProperties.getProperty("AWS_ACCESS_KEY", "")}\"")
+        buildConfigField("String", "AWS_SECRET_KEY", "\"${localProperties.getProperty("AWS_SECRET_KEY", "")}\"")
+        buildConfigField("String", "AWS_REGION", "\"${localProperties.getProperty("AWS_REGION", "")}\"")
+        buildConfigField("String", "KVS_CHANNEL_NAME", "\"${localProperties.getProperty("KVS_CHANNEL_NAME", "")}\"")
     }
 
     buildTypes {
@@ -40,6 +55,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -62,6 +78,11 @@ dependencies {
 
     // Navigation
     implementation(libs.navigation.compose)
+
+    // AWS KVS WebRTC
+    implementation("com.amazonaws:aws-android-sdk-kinesisvideo:2.73.0")
+    implementation("com.amazonaws:aws-android-sdk-kinesisvideo-signaling:2.73.0")
+    implementation("io.getstream:stream-webrtc-android:1.1.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
