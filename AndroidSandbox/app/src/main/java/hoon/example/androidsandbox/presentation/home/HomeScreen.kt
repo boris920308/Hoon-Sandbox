@@ -27,15 +27,15 @@ fun HomeScreen(
 ) {
     val menuItems = listOf(
         MenuItem(
-            titleResId = Route.Counter.titleResId,
+            titleResId = R.string.route_counter,
             route = Route.Counter
         ),
         MenuItem(
-            titleResId = Route.KvsMaster.titleResId,
+            titleResId = R.string.route_kvs_master,
             route = Route.KvsMaster
         ),
         MenuItem(
-            titleResId = Route.KvsViewer.titleResId,
+            titleResId = R.string.route_kvs_viewer,
             route = Route.KvsViewer
         ),
         MenuItem(
