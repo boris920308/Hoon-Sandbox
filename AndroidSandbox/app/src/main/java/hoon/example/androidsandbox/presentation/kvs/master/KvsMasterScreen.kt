@@ -1,5 +1,8 @@
 package hoon.example.androidsandbox.presentation.kvs.master
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,22 +20,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import hoon.example.androidsandbox.presentation.kvs.master.component.CameraPreview
 import hoon.example.androidsandbox.presentation.kvs.master.component.CameraPreviewPlaceholder
 import hoon.example.androidsandbox.presentation.kvs.master.component.ConnectionStatusBadge
 import hoon.example.androidsandbox.ui.theme.AndroidSandboxTheme
@@ -41,10 +48,37 @@ import hoon.example.androidsandbox.ui.theme.AndroidSandboxTheme
 fun KvsMasterScreen(
     viewModel: KvsMasterViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    var hasPermissions by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        hasPermissions = permissions.values.all { it }
+        if (hasPermissions) {
+            viewModel.initialize(context)
+            viewModel.startLocalVideo(context)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        )
+    }
 
     KvsMasterScreenContent(
         uiState = uiState,
+        hasPermissions = hasPermissions,
+        eglBaseContext = viewModel.getEglBaseContext(),
+        onSurfaceReady = { sink ->
+            viewModel.setLocalVideoSink(sink)
+        },
         onConnectClick = viewModel::connect,
         onDisconnectClick = viewModel::disconnect,
         onToggleCameraClick = viewModel::toggleCamera
@@ -54,6 +88,9 @@ fun KvsMasterScreen(
 @Composable
 private fun KvsMasterScreenContent(
     uiState: KvsMasterUiState,
+    hasPermissions: Boolean,
+    eglBaseContext: org.webrtc.EglBase.Context?,
+    onSurfaceReady: (org.webrtc.VideoSink) -> Unit,
     onConnectClick: () -> Unit,
     onDisconnectClick: () -> Unit,
     onToggleCameraClick: () -> Unit
@@ -94,10 +131,18 @@ private fun KvsMasterScreenContent(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
         ) {
-            CameraPreviewPlaceholder(
-                cameraFacing = uiState.cameraFacing,
-                modifier = Modifier.fillMaxSize()
-            )
+            if (hasPermissions && eglBaseContext != null) {
+                CameraPreview(
+                    eglBaseContext = eglBaseContext,
+                    onSurfaceReady = onSurfaceReady,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                CameraPreviewPlaceholder(
+                    cameraFacing = uiState.cameraFacing,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             // 카메라 전환 버튼 (우측 상단)
             IconButton(
@@ -170,6 +215,9 @@ private fun KvsMasterScreenPreview() {
                 channelName = "test-channel",
                 connectionState = ConnectionState.DISCONNECTED
             ),
+            hasPermissions = false,
+            eglBaseContext = null,
+            onSurfaceReady = {},
             onConnectClick = {},
             onDisconnectClick = {},
             onToggleCameraClick = {}
