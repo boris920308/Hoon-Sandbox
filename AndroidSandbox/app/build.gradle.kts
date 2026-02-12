@@ -84,6 +84,9 @@ dependencies {
     implementation("com.amazonaws:aws-android-sdk-kinesisvideo-signaling:2.73.0")
     implementation("io.getstream:stream-webrtc-android:1.1.1")
 
+    // OkHttp (for WebSocket)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
