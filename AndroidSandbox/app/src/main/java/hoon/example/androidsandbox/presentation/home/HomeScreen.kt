@@ -29,8 +29,8 @@ fun HomeScreen(
             route = Route.Counter
         ),
         MenuItem(
-            title = "Coming Soon",
-            route = Route.Home
+            title = "KvsMaster",
+            route = Route.KvsMaster
         ),
         MenuItem(
             title = "Coming Soon",
