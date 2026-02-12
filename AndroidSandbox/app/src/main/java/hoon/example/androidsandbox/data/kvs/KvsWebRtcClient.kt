@@ -93,6 +93,11 @@ class KvsWebRtcClient @Inject constructor(
     }
 
     fun initializePeerConnectionFactory(context: Context) {
+        if (isInitialized) {
+            Log.d(TAG, "PeerConnectionFactory already initialized")
+            return
+        }
+
         Log.d(TAG, "Initializing PeerConnectionFactory")
 
         eglBase = EglBase.create()
@@ -114,6 +119,7 @@ class KvsWebRtcClient @Inject constructor(
             .setVideoDecoderFactory(decoderFactory)
             .createPeerConnectionFactory()
 
+        isInitialized = true
         Log.d(TAG, "PeerConnectionFactory initialized")
     }
 
@@ -435,6 +441,13 @@ class KvsWebRtcClient @Inject constructor(
         peerConnections.values.forEach { it.close() }
         peerConnections.clear()
 
+        _connectionState.value = KvsConnectionState.DISCONNECTED
+        Log.d(TAG, "Disconnected")
+    }
+
+    fun stopLocalVideo() {
+        Log.d(TAG, "Stopping local video")
+
         videoCapturer?.stopCapture()
         videoCapturer?.dispose()
         videoCapturer = null
@@ -447,18 +460,19 @@ class KvsWebRtcClient @Inject constructor(
 
         surfaceTextureHelper?.dispose()
         surfaceTextureHelper = null
-
-        _connectionState.value = KvsConnectionState.DISCONNECTED
-        Log.d(TAG, "Disconnected")
     }
 
     fun release() {
         disconnect()
+        stopLocalVideo()
         peerConnectionFactory?.dispose()
         peerConnectionFactory = null
         eglBase?.release()
         eglBase = null
+        isInitialized = false
     }
+
+    private var isInitialized = false
 }
 
 enum class KvsConnectionState {

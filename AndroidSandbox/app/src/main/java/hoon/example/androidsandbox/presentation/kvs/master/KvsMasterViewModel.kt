@@ -26,8 +26,6 @@ class KvsMasterViewModel @Inject constructor(
     )
     val uiState: StateFlow<KvsMasterUiState> = _uiState.asStateFlow()
 
-    private var isInitialized = false
-
     init {
         observeConnectionState()
     }
@@ -43,9 +41,7 @@ class KvsMasterViewModel @Inject constructor(
     }
 
     fun initialize(context: Context) {
-        if (isInitialized) return
         repository.initialize(context)
-        isInitialized = true
     }
 
     fun getEglBaseContext(): EglBase.Context? {
