@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Android Sandbox</string>
+
+    <!-- Route Titles -->
+    <string name="route_home">Home</string>
+    <string name="route_counter">Counter</string>
+    <string name="route_kvs_master">KVS Master</string>
+    <string name="route_coming_soon">Coming Soon</string>
 </resources>
