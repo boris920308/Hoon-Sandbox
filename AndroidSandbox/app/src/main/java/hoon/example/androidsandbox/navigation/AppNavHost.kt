@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import hoon.example.androidsandbox.presentation.counter.CounterScreen
 import hoon.example.androidsandbox.presentation.home.HomeScreen
 import hoon.example.androidsandbox.presentation.kvs.master.KvsMasterScreen
+import hoon.example.androidsandbox.presentation.kvs.viewer.KvsViewerScreen
 
 @Composable
 fun AppNavHost(
@@ -35,6 +36,10 @@ fun AppNavHost(
 
         composable(Route.KvsMaster.route) {
             KvsMasterScreen()
+        }
+
+        composable(Route.KvsViewer.route) {
+            KvsViewerScreen()
         }
     }
 }

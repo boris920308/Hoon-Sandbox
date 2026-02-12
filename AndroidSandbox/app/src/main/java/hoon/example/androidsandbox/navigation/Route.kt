@@ -21,4 +21,10 @@ sealed class Route(
         titleResId = R.string.route_kvs_master,
         route = "kvsMaster"
     )
+
+    data object KvsViewer : Route(
+        titleResId = R.string.route_kvs_viewer,
+        route = "kvsViewer"
+    )
+
 }

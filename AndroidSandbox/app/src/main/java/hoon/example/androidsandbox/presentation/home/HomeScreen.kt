@@ -35,8 +35,8 @@ fun HomeScreen(
             route = Route.KvsMaster
         ),
         MenuItem(
-            titleResId = R.string.route_coming_soon,
-            route = Route.Home
+            titleResId = Route.KvsViewer.titleResId,
+            route = Route.KvsViewer
         ),
         MenuItem(
             titleResId = R.string.route_coming_soon,
