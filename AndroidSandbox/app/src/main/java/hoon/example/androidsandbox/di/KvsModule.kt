@@ -7,7 +7,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import hoon.example.androidsandbox.data.kvs.KvsClientConfig
 import hoon.example.androidsandbox.data.kvs.repository.KvsMasterRepositoryImpl
+import hoon.example.androidsandbox.data.kvs.repository.KvsViewerRepositoryImpl
 import hoon.example.androidsandbox.domain.kvs.repository.KvsMasterRepository
+import hoon.example.androidsandbox.domain.kvs.repository.KvsViewerRepository
 import javax.inject.Singleton
 
 @Module
@@ -19,6 +21,12 @@ abstract class KvsModule {
     abstract fun bindKvsMasterRepository(
         impl: KvsMasterRepositoryImpl
     ): KvsMasterRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindKvsViewerRepository(
+        impl: KvsViewerRepositoryImpl
+    ): KvsViewerRepository
 
     companion object {
         @Provides
