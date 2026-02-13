@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
@@ -46,6 +47,7 @@ import hoon.example.androidsandbox.ui.theme.AndroidSandboxTheme
 
 @Composable
 fun KvsMasterScreen(
+    onBackClick: () -> Unit = {},
     viewModel: KvsMasterViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -81,7 +83,8 @@ fun KvsMasterScreen(
         },
         onConnectClick = viewModel::connect,
         onDisconnectClick = viewModel::disconnect,
-        onToggleCameraClick = viewModel::toggleCamera
+        onToggleCameraClick = viewModel::toggleCamera,
+        onBackClick = onBackClick
     )
 }
 
@@ -93,7 +96,8 @@ private fun KvsMasterScreenContent(
     onSurfaceReady: (org.webrtc.VideoSink) -> Unit,
     onConnectClick: () -> Unit,
     onDisconnectClick: () -> Unit,
-    onToggleCameraClick: () -> Unit
+    onToggleCameraClick: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -106,17 +110,26 @@ private fun KvsMasterScreenContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "Master",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
-                Text(
-                    text = uiState.channelName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+                Column {
+                    Text(
+                        text = "Master",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    Text(
+                        text = uiState.channelName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
             }
             ConnectionStatusBadge(connectionState = uiState.connectionState)
         }
@@ -209,7 +222,9 @@ private fun KvsMasterScreenPreview() {
             onSurfaceReady = {},
             onConnectClick = {},
             onDisconnectClick = {},
-            onToggleCameraClick = {}
+            onToggleCameraClick = {},
+            onBackClick = {}
         )
     }
 }
+

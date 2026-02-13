@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -40,6 +41,7 @@ import org.webrtc.VideoSink
 
 @Composable
 fun KvsViewerScreen(
+    onBackClick: () -> Unit = {},
     viewModel: KvsViewerViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -57,7 +59,8 @@ fun KvsViewerScreen(
         },
         onSurfaceReleased = viewModel::clearRemoteVideoSink,
         onConnectClick = viewModel::connect,
-        onDisconnectClick = viewModel::disconnect
+        onDisconnectClick = viewModel::disconnect,
+        onBackClick = onBackClick
     )
 }
 
@@ -68,7 +71,8 @@ private fun KvsViewerScreenContent(
     onSurfaceReady: (VideoSink) -> Unit,
     onSurfaceReleased: () -> Unit,
     onConnectClick: () -> Unit,
-    onDisconnectClick: () -> Unit
+    onDisconnectClick: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -81,17 +85,26 @@ private fun KvsViewerScreenContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = "Viewer",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White
-                )
-                Text(
-                    text = uiState.channelName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+                Column {
+                    Text(
+                        text = "Viewer",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    Text(
+                        text = uiState.channelName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
             }
             ViewerConnectionStatusBadge(connectionState = uiState.connectionState)
         }
@@ -219,7 +232,9 @@ private fun KvsViewerScreenPreview() {
             onSurfaceReady = {},
             onSurfaceReleased = {},
             onConnectClick = {},
-            onDisconnectClick = {}
+            onDisconnectClick = {},
+            onBackClick = {}
         )
     }
 }
+

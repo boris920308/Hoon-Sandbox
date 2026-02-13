@@ -35,11 +35,15 @@ fun AppNavHost(
         }
 
         composable(Route.KvsMaster.route) {
-            KvsMasterScreen()
+            KvsMasterScreen(
+                onBackClick = { navController.popBackStack() }
+            )
         }
 
         composable(Route.KvsViewer.route) {
-            KvsViewerScreen()
+            KvsViewerScreen(
+                onBackClick = { navController.popBackStack() }
+            )
         }
     }
 }
