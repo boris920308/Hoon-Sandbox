@@ -270,6 +270,7 @@ class KvsWebRtcClient @Inject constructor(
 
     private fun createPeerConnection(clientId: String): PeerConnection? {
         val factory = peerConnectionFactory ?: return null
+        closePeerConnection(clientId)
 
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
@@ -438,7 +439,7 @@ class KvsWebRtcClient @Inject constructor(
 
         signalingClient.disconnect()
 
-        peerConnections.values.forEach { it.close() }
+        peerConnections.keys.toList().forEach(::closePeerConnection)
         peerConnections.clear()
 
         _connectionState.value = KvsConnectionState.DISCONNECTED
@@ -451,6 +452,11 @@ class KvsWebRtcClient @Inject constructor(
         videoCapturer?.stopCapture()
         videoCapturer?.dispose()
         videoCapturer = null
+
+        localVideoSink?.let { sink ->
+            localVideoTrack?.removeSink(sink)
+        }
+        localVideoSink = null
 
         localVideoTrack?.dispose()
         localVideoTrack = null
@@ -469,7 +475,16 @@ class KvsWebRtcClient @Inject constructor(
         peerConnectionFactory = null
         eglBase?.release()
         eglBase = null
+        iceServers = emptyList()
+        wssEndpoint = null
+        channelArn = null
         isInitialized = false
+    }
+
+    private fun closePeerConnection(clientId: String) {
+        val connection = peerConnections.remove(clientId) ?: return
+        connection.close()
+        connection.dispose()
     }
 
     private var isInitialized = false

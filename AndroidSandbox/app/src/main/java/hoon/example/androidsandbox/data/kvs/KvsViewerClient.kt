@@ -372,7 +372,9 @@ class KvsViewerClient @Inject constructor(
         signalingClient.disconnect()
 
         peerConnection?.close()
+        peerConnection?.dispose()
         peerConnection = null
+        remoteVideoSink = null
 
         _connectionState.value = KvsConnectionState.DISCONNECTED
         Log.d(TAG, "Disconnected")
@@ -384,6 +386,9 @@ class KvsViewerClient @Inject constructor(
         peerConnectionFactory = null
         eglBase?.release()
         eglBase = null
+        iceServers = emptyList()
+        wssEndpoint = null
+        channelArn = null
         isInitialized = false
     }
 }
