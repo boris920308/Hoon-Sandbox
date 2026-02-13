@@ -1,4 +1,4 @@
-package hoon.example.androidsandbox.presentation.kvs.viewer
+﻿package hoon.example.androidsandbox.presentation.kvs.viewer
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -76,7 +76,6 @@ private fun KvsViewerScreenContent(
             .background(Color.Black)
             .padding(16.dp)
     ) {
-        // 상단: 채널 정보 & 연결 상태
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -99,7 +98,6 @@ private fun KvsViewerScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 중앙: 원격 비디오 영역
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -117,75 +115,70 @@ private fun KvsViewerScreenContent(
                         )
                     } else {
                         VideoPlaceholder(
-                            message = "영상 준비 중...",
+                            message = "Preparing video...",
                             modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
+
                 ViewerConnectionState.CONNECTING -> {
                     VideoPlaceholder(
-                        message = "연결 중...",
+                        message = "Connecting...",
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+
                 ViewerConnectionState.DISCONNECTED -> {
                     VideoPlaceholder(
-                        message = "연결 버튼을 눌러 시청하세요",
+                        message = "Tap connect to start viewing",
                         modifier = Modifier.fillMaxSize()
                     )
                 }
+
                 ViewerConnectionState.ERROR -> {
                     VideoPlaceholder(
-                        message = "연결 오류 발생",
+                        message = "Connection error",
                         modifier = Modifier.fillMaxSize()
                     )
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 하단: 컨트롤 버튼
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
             if (uiState.connectionState == ViewerConnectionState.CONNECTED ||
                 uiState.connectionState == ViewerConnectionState.CONNECTING
             ) {
-                // 연결 종료 버튼
                 IconButton(
                     onClick = onDisconnectClick,
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Red, CircleShape)
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .size(72.dp)
+                        .background(Color.Red.copy(alpha = 0.9f), CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "연결 종료",
+                        contentDescription = "Disconnect",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             } else {
-                // 연결 시작 버튼
                 IconButton(
                     onClick = onConnectClick,
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Green, CircleShape)
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .size(72.dp)
+                        .background(Color.Green.copy(alpha = 0.9f), CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "시청 시작",
+                        contentDescription = "Connect",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -194,10 +187,10 @@ private fun ViewerConnectionStatusBadge(
     connectionState: ViewerConnectionState
 ) {
     val (text, color) = when (connectionState) {
-        ViewerConnectionState.DISCONNECTED -> "연결 안됨" to Color.Gray
-        ViewerConnectionState.CONNECTING -> "연결 중..." to Color.Yellow
-        ViewerConnectionState.CONNECTED -> "시청 중" to Color.Green
-        ViewerConnectionState.ERROR -> "오류" to Color.Red
+        ViewerConnectionState.DISCONNECTED -> "Disconnected" to Color.Gray
+        ViewerConnectionState.CONNECTING -> "Connecting..." to Color.Yellow
+        ViewerConnectionState.CONNECTED -> "Streaming" to Color.Green
+        ViewerConnectionState.ERROR -> "Error" to Color.Red
     }
 
     Box(
