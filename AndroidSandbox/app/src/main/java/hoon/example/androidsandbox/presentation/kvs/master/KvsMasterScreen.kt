@@ -1,4 +1,4 @@
-package hoon.example.androidsandbox.presentation.kvs.master
+﻿package hoon.example.androidsandbox.presentation.kvs.master
 
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -101,7 +101,6 @@ private fun KvsMasterScreenContent(
             .background(Color.Black)
             .padding(16.dp)
     ) {
-        // 상단: 채널 정보 & 연결 상태
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -124,7 +123,6 @@ private fun KvsMasterScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 중앙: 카메라 프리뷰
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -144,7 +142,6 @@ private fun KvsMasterScreenContent(
                 )
             }
 
-            // 카메라 전환 버튼 (우측 상단)
             IconButton(
                 onClick = onToggleCameraClick,
                 modifier = Modifier
@@ -154,55 +151,47 @@ private fun KvsMasterScreenContent(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "카메라 전환",
+                    contentDescription = "Switch camera",
                     tint = Color.White
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 하단: 컨트롤 버튼
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
             if (uiState.connectionState == ConnectionState.CONNECTED ||
                 uiState.connectionState == ConnectionState.CONNECTING
             ) {
-                // 연결 종료 버튼
                 IconButton(
                     onClick = onDisconnectClick,
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Red, CircleShape)
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .size(72.dp)
+                        .background(Color.Red.copy(alpha = 0.9f), CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "연결 종료",
+                        contentDescription = "Disconnect",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             } else {
-                // 연결 시작 버튼
                 IconButton(
                     onClick = onConnectClick,
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Green, CircleShape)
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 12.dp)
+                        .size(72.dp)
+                        .background(Color.Green.copy(alpha = 0.9f), CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Call,
-                        contentDescription = "연결 시작",
+                        contentDescription = "Connect",
                         tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
