@@ -11,6 +11,7 @@ interface KvsViewerRepository {
     fun initialize(context: Context)
     fun getEglBaseContext(): EglBase.Context?
     fun setRemoteVideoSink(sink: VideoSink)
+    fun clearRemoteVideoSink()
     suspend fun connect(): Result<Unit>
     fun disconnect()
     fun release()

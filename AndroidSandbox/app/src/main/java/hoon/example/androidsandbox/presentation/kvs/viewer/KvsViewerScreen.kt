@@ -55,6 +55,7 @@ fun KvsViewerScreen(
         onSurfaceReady = { sink ->
             viewModel.setRemoteVideoSink(sink)
         },
+        onSurfaceReleased = viewModel::clearRemoteVideoSink,
         onConnectClick = viewModel::connect,
         onDisconnectClick = viewModel::disconnect
     )
@@ -65,6 +66,7 @@ private fun KvsViewerScreenContent(
     uiState: KvsViewerUiState,
     eglBaseContext: EglBase.Context?,
     onSurfaceReady: (VideoSink) -> Unit,
+    onSurfaceReleased: () -> Unit,
     onConnectClick: () -> Unit,
     onDisconnectClick: () -> Unit
 ) {
@@ -110,6 +112,7 @@ private fun KvsViewerScreenContent(
                         RemoteVideoView(
                             eglBaseContext = eglBaseContext,
                             onSurfaceReady = onSurfaceReady,
+                            onSurfaceReleased = onSurfaceReleased,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
@@ -221,6 +224,7 @@ private fun KvsViewerScreenPreview() {
             ),
             eglBaseContext = null,
             onSurfaceReady = {},
+            onSurfaceReleased = {},
             onConnectClick = {},
             onDisconnectClick = {}
         )

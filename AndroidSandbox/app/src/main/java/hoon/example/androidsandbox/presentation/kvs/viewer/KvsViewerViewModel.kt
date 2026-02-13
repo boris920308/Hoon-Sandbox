@@ -52,6 +52,10 @@ class KvsViewerViewModel @Inject constructor(
         repository.setRemoteVideoSink(sink)
     }
 
+    fun clearRemoteVideoSink() {
+        repository.clearRemoteVideoSink()
+    }
+
     fun connect() {
         viewModelScope.launch {
             repository.connect()

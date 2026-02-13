@@ -30,6 +30,10 @@ class KvsViewerRepositoryImpl @Inject constructor(
         kvsViewerClient.setRemoteVideoSink(sink)
     }
 
+    override fun clearRemoteVideoSink() {
+        kvsViewerClient.clearRemoteVideoSink()
+    }
+
     override suspend fun connect(): Result<Unit> {
         return kvsViewerClient.connectAsViewer()
     }

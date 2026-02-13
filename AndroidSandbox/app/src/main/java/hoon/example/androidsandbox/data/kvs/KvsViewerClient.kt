@@ -41,6 +41,7 @@ class KvsViewerClient @Inject constructor(
 
     private var peerConnectionFactory: PeerConnectionFactory? = null
     private var peerConnection: PeerConnection? = null
+    private var remoteVideoTrack: VideoTrack? = null
     private var eglBase: EglBase? = null
 
     private var remoteVideoSink: VideoSink? = null
@@ -124,8 +125,17 @@ class KvsViewerClient @Inject constructor(
     fun getEglBaseContext(): EglBase.Context? = eglBase?.eglBaseContext
 
     fun setRemoteVideoSink(sink: VideoSink) {
+        clearRemoteVideoSink()
         remoteVideoSink = sink
+        remoteVideoTrack?.addSink(sink)
         Log.d(TAG, "Remote video sink set")
+    }
+
+    fun clearRemoteVideoSink() {
+        remoteVideoSink?.let { sink ->
+            remoteVideoTrack?.removeSink(sink)
+        }
+        remoteVideoSink = null
     }
 
     suspend fun connectAsViewer(): Result<Unit> = withContext(Dispatchers.IO) {
@@ -212,6 +222,7 @@ class KvsViewerClient @Inject constructor(
             Log.e(TAG, "PeerConnectionFactory is null")
             return
         }
+        closePeerConnection()
 
         val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
@@ -267,6 +278,7 @@ class KvsViewerClient @Inject constructor(
                 Log.d(TAG, "Track added: ${receiver?.track()?.kind()}")
                 receiver?.track()?.let { track ->
                     if (track is VideoTrack) {
+                        remoteVideoTrack = track
                         Log.d(TAG, "Adding remote video track to sink")
                         scope.launch(Dispatchers.Main) {
                             remoteVideoSink?.let { sink ->
@@ -371,10 +383,8 @@ class KvsViewerClient @Inject constructor(
 
         signalingClient.disconnect()
 
-        peerConnection?.close()
-        peerConnection?.dispose()
-        peerConnection = null
-        remoteVideoSink = null
+        clearRemoteVideoSink()
+        closePeerConnection()
 
         _connectionState.value = KvsConnectionState.DISCONNECTED
         Log.d(TAG, "Disconnected")
@@ -386,9 +396,17 @@ class KvsViewerClient @Inject constructor(
         peerConnectionFactory = null
         eglBase?.release()
         eglBase = null
+        remoteVideoTrack = null
         iceServers = emptyList()
         wssEndpoint = null
         channelArn = null
         isInitialized = false
+    }
+
+    private fun closePeerConnection() {
+        peerConnection?.close()
+        peerConnection?.dispose()
+        peerConnection = null
+        remoteVideoTrack = null
     }
 }

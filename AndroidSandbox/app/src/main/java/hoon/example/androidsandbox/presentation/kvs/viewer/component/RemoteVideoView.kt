@@ -16,6 +16,7 @@ import org.webrtc.VideoSink
 fun RemoteVideoView(
     eglBaseContext: EglBase.Context?,
     onSurfaceReady: (VideoSink) -> Unit,
+    onSurfaceReleased: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -39,6 +40,7 @@ fun RemoteVideoView(
         }
 
         onDispose {
+            onSurfaceReleased()
             surfaceViewRenderer.release()
         }
     }
