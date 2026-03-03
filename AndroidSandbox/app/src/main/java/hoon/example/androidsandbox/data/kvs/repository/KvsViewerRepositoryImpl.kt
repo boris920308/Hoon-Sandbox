@@ -17,6 +17,8 @@ class KvsViewerRepositoryImpl @Inject constructor(
 
     override val connectionState: Flow<KvsViewerConnectionState>
         get() = kvsViewerClient.connectionState.map { it.toDomain() }
+    override val isReceivingVideo: Flow<Boolean>
+        get() = kvsViewerClient.isReceivingVideo
 
     override fun initialize(context: Context) {
         kvsViewerClient.initializePeerConnectionFactory(context)

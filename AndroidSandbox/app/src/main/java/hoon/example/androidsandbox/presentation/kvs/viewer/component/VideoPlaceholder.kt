@@ -19,10 +19,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun VideoPlaceholder(
     message: String,
+    backgroundColor: Color = Color.DarkGray,
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.background(Color.DarkGray),
+        modifier = modifier.background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

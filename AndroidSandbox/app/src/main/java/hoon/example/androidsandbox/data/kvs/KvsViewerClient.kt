@@ -45,6 +45,8 @@ class KvsViewerClient @Inject constructor(
 
     private val _connectionState = MutableStateFlow(KvsConnectionState.DISCONNECTED)
     val connectionState: StateFlow<KvsConnectionState> = _connectionState.asStateFlow()
+    private val _isReceivingVideo = MutableStateFlow(false)
+    val isReceivingVideo: StateFlow<Boolean> = _isReceivingVideo.asStateFlow()
 
     private var peerConnectionFactory: PeerConnectionFactory? = null
     private var peerConnection: PeerConnection? = null
@@ -78,6 +80,7 @@ class KvsViewerClient @Inject constructor(
                     is SignalingEvent.Connected -> {
                         Log.d(TAG, "Signaling connected, starting offer retry loop")
                         _connectionState.value = KvsConnectionState.CONNECTED
+                        _isReceivingVideo.value = false
                         startOfferRetryLoop()
                         startFrameWatchdog()
                     }
@@ -87,6 +90,7 @@ class KvsViewerClient @Inject constructor(
                         stopFrameWatchdog()
                         cancelDelayedIceRestart()
                         hasReceivedAnswer = false
+                        _isReceivingVideo.value = false
                         _connectionState.value = KvsConnectionState.DISCONNECTED
                     }
                     is SignalingEvent.Error -> {
@@ -94,6 +98,7 @@ class KvsViewerClient @Inject constructor(
                         stopOfferRetryLoop()
                         stopFrameWatchdog()
                         cancelDelayedIceRestart()
+                        _isReceivingVideo.value = false
                         _connectionState.value = KvsConnectionState.ERROR
                     }
                     is SignalingEvent.SdpOffer -> {
@@ -151,6 +156,7 @@ class KvsViewerClient @Inject constructor(
         remoteVideoSink = sink
         trackedRemoteVideoSink = VideoSink { frame ->
             lastFrameReceivedAtMs = System.currentTimeMillis()
+            _isReceivingVideo.value = true
             sink.onFrame(frame)
         }
         trackedRemoteVideoSink?.let { trackedSink ->
@@ -270,6 +276,7 @@ class KvsViewerClient @Inject constructor(
                         cancelDelayedIceRestart()
                     }
                     PeerConnection.IceConnectionState.DISCONNECTED -> {
+                        _isReceivingVideo.value = false
                         scheduleIceDisconnectedRestart()
                     }
                     PeerConnection.IceConnectionState.FAILED,
@@ -307,6 +314,7 @@ class KvsViewerClient @Inject constructor(
 
             override fun onRemoveStream(stream: MediaStream?) {
                 Log.d(TAG, "Stream removed")
+                _isReceivingVideo.value = false
                 restartNegotiation("Remote stream removed")
             }
 
@@ -428,6 +436,7 @@ class KvsViewerClient @Inject constructor(
                 cancelDelayedIceRestart()
                 hasReceivedAnswer = false
                 lastFrameReceivedAtMs = 0L
+                _isReceivingVideo.value = false
                 createPeerConnection()
                 startOfferRetryLoop()
             } finally {
@@ -531,6 +540,7 @@ class KvsViewerClient @Inject constructor(
         cancelDelayedIceRestart()
         hasReceivedAnswer = false
         lastFrameReceivedAtMs = 0L
+        _isReceivingVideo.value = false
         isRestartingNegotiation = false
         signalingClient.disconnect()
 
@@ -553,6 +563,7 @@ class KvsViewerClient @Inject constructor(
         stopFrameWatchdog()
         cancelDelayedIceRestart()
         lastFrameReceivedAtMs = 0L
+        _isReceivingVideo.value = false
         isRestartingNegotiation = false
         iceServers = emptyList()
         wssEndpoint = null

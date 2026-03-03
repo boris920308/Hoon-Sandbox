@@ -28,6 +28,7 @@ class KvsViewerViewModel @Inject constructor(
 
     init {
         observeConnectionState()
+        observeVideoState()
     }
 
     private fun observeConnectionState() {
@@ -35,6 +36,16 @@ class KvsViewerViewModel @Inject constructor(
             repository.connectionState.collect { state ->
                 _uiState.update {
                     it.copy(connectionState = state.toUiState())
+                }
+            }
+        }
+    }
+
+    private fun observeVideoState() {
+        viewModelScope.launch {
+            repository.isReceivingVideo.collect { isReceiving ->
+                _uiState.update {
+                    it.copy(isReceivingVideo = isReceiving)
                 }
             }
         }

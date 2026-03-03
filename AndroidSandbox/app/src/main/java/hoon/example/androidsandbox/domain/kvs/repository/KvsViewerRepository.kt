@@ -7,6 +7,7 @@ import org.webrtc.VideoSink
 
 interface KvsViewerRepository {
     val connectionState: Flow<KvsViewerConnectionState>
+    val isReceivingVideo: Flow<Boolean>
 
     fun initialize(context: Context)
     fun getEglBaseContext(): EglBase.Context?

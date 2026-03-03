@@ -106,7 +106,10 @@ private fun KvsViewerScreenContent(
                     )
                 }
             }
-            ViewerConnectionStatusBadge(connectionState = uiState.connectionState)
+            ViewerConnectionStatusBadge(
+                connectionState = uiState.connectionState,
+                isReceivingVideo = uiState.isReceivingVideo
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -159,6 +162,21 @@ private fun KvsViewerScreenContent(
             if (uiState.connectionState == ViewerConnectionState.CONNECTED ||
                 uiState.connectionState == ViewerConnectionState.CONNECTING
             ) {
+                if (uiState.connectionState == ViewerConnectionState.CONNECTED && !uiState.isReceivingVideo) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Master가 연결 해제되었습니다. 재연결을 기다리는 중...",
+                            color = Color.LightGray,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
                 IconButton(
                     onClick = onDisconnectClick,
                     modifier = Modifier
@@ -197,12 +215,16 @@ private fun KvsViewerScreenContent(
 
 @Composable
 private fun ViewerConnectionStatusBadge(
-    connectionState: ViewerConnectionState
+    connectionState: ViewerConnectionState,
+    isReceivingVideo: Boolean
 ) {
     val (text, color) = when (connectionState) {
         ViewerConnectionState.DISCONNECTED -> "Disconnected" to Color.Gray
         ViewerConnectionState.CONNECTING -> "Connecting..." to Color.Yellow
-        ViewerConnectionState.CONNECTED -> "Streaming" to Color.Green
+        ViewerConnectionState.CONNECTED -> {
+            if (isReceivingVideo) "Streaming" to Color.Green
+            else "대기 중" to Color(0xFFFFB74D)
+        }
         ViewerConnectionState.ERROR -> "Error" to Color.Red
     }
 
@@ -237,4 +259,3 @@ private fun KvsViewerScreenPreview() {
         )
     }
 }
-
