@@ -15,10 +15,13 @@ import hoon.example.androidsandbox.data.kvs.signaling.KvsSignalingClient
 import hoon.example.androidsandbox.data.kvs.signaling.SignalingEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.webrtc.*
@@ -32,6 +35,10 @@ class KvsViewerClient @Inject constructor(
     companion object {
         private const val TAG = "KvsViewerClient"
         private const val VIEWER_CLIENT_ID = "viewer"
+        private const val OFFER_RETRY_INTERVAL_MS = 5_000L
+        private const val FRAME_WATCHDOG_INTERVAL_MS = 2_000L
+        private const val FRAME_TIMEOUT_MS = 8_000L
+        private const val ICE_DISCONNECTED_RESTART_DELAY_MS = 3_000L
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -45,6 +52,7 @@ class KvsViewerClient @Inject constructor(
     private var eglBase: EglBase? = null
 
     private var remoteVideoSink: VideoSink? = null
+    private var trackedRemoteVideoSink: VideoSink? = null
 
     private val signalingClient = KvsSignalingClient()
     private var iceServers: List<PeerConnection.IceServer> = emptyList()
@@ -52,6 +60,12 @@ class KvsViewerClient @Inject constructor(
     private var wssEndpoint: String? = null
     private var channelArn: String? = null
     private var isInitialized = false
+    private var hasReceivedAnswer = false
+    private var offerRetryJob: Job? = null
+    private var frameWatchdogJob: Job? = null
+    private var delayedIceRestartJob: Job? = null
+    private var isRestartingNegotiation = false
+    private var lastFrameReceivedAtMs: Long = 0L
 
     init {
         observeSignalingEvents()
@@ -62,16 +76,24 @@ class KvsViewerClient @Inject constructor(
             signalingClient.signalingEvents.collect { event ->
                 when (event) {
                     is SignalingEvent.Connected -> {
-                        Log.d(TAG, "Signaling connected, creating offer")
+                        Log.d(TAG, "Signaling connected, starting offer retry loop")
                         _connectionState.value = KvsConnectionState.CONNECTED
-                        createAndSendOffer()
+                        startOfferRetryLoop()
+                        startFrameWatchdog()
                     }
                     is SignalingEvent.Disconnected -> {
                         Log.d(TAG, "Signaling disconnected")
+                        stopOfferRetryLoop()
+                        stopFrameWatchdog()
+                        cancelDelayedIceRestart()
+                        hasReceivedAnswer = false
                         _connectionState.value = KvsConnectionState.DISCONNECTED
                     }
                     is SignalingEvent.Error -> {
                         Log.e(TAG, "Signaling error: ${event.message}")
+                        stopOfferRetryLoop()
+                        stopFrameWatchdog()
+                        cancelDelayedIceRestart()
                         _connectionState.value = KvsConnectionState.ERROR
                     }
                     is SignalingEvent.SdpOffer -> {
@@ -127,14 +149,21 @@ class KvsViewerClient @Inject constructor(
     fun setRemoteVideoSink(sink: VideoSink) {
         clearRemoteVideoSink()
         remoteVideoSink = sink
-        remoteVideoTrack?.addSink(sink)
+        trackedRemoteVideoSink = VideoSink { frame ->
+            lastFrameReceivedAtMs = System.currentTimeMillis()
+            sink.onFrame(frame)
+        }
+        trackedRemoteVideoSink?.let { trackedSink ->
+            remoteVideoTrack?.addSink(trackedSink)
+        }
         Log.d(TAG, "Remote video sink set")
     }
 
     fun clearRemoteVideoSink() {
-        remoteVideoSink?.let { sink ->
-            remoteVideoTrack?.removeSink(sink)
+        trackedRemoteVideoSink?.let { trackedSink ->
+            remoteVideoTrack?.removeSink(trackedSink)
         }
+        trackedRemoteVideoSink = null
         remoteVideoSink = null
     }
 
@@ -236,6 +265,20 @@ class KvsViewerClient @Inject constructor(
 
             override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
                 Log.d(TAG, "ICE connection state: $state")
+                when (state) {
+                    PeerConnection.IceConnectionState.CONNECTED -> {
+                        cancelDelayedIceRestart()
+                    }
+                    PeerConnection.IceConnectionState.DISCONNECTED -> {
+                        scheduleIceDisconnectedRestart()
+                    }
+                    PeerConnection.IceConnectionState.FAILED,
+                    PeerConnection.IceConnectionState.CLOSED -> {
+                        cancelDelayedIceRestart()
+                        restartNegotiation("ICE state changed to $state")
+                    }
+                    else -> Unit
+                }
             }
 
             override fun onIceConnectionReceivingChange(receiving: Boolean) {
@@ -264,6 +307,7 @@ class KvsViewerClient @Inject constructor(
 
             override fun onRemoveStream(stream: MediaStream?) {
                 Log.d(TAG, "Stream removed")
+                restartNegotiation("Remote stream removed")
             }
 
             override fun onDataChannel(channel: DataChannel?) {
@@ -272,6 +316,7 @@ class KvsViewerClient @Inject constructor(
 
             override fun onRenegotiationNeeded() {
                 Log.d(TAG, "Renegotiation needed")
+                restartNegotiation("PeerConnection requested renegotiation")
             }
 
             override fun onAddTrack(receiver: RtpReceiver?, streams: Array<out MediaStream>?) {
@@ -281,8 +326,8 @@ class KvsViewerClient @Inject constructor(
                         remoteVideoTrack = track
                         Log.d(TAG, "Adding remote video track to sink")
                         scope.launch(Dispatchers.Main) {
-                            remoteVideoSink?.let { sink ->
-                                track.addSink(sink)
+                            trackedRemoteVideoSink?.let { trackedSink ->
+                                track.addSink(trackedSink)
                             }
                         }
                     }
@@ -305,9 +350,102 @@ class KvsViewerClient @Inject constructor(
         Log.d(TAG, "PeerConnection created")
     }
 
+    private fun startOfferRetryLoop() {
+        hasReceivedAnswer = false
+        stopOfferRetryLoop()
+        offerRetryJob = scope.launch {
+            while (isActive && !hasReceivedAnswer && _connectionState.value == KvsConnectionState.CONNECTED) {
+                createAndSendOffer()
+                delay(OFFER_RETRY_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun stopOfferRetryLoop() {
+        offerRetryJob?.cancel()
+        offerRetryJob = null
+    }
+
+    private fun startFrameWatchdog() {
+        stopFrameWatchdog()
+        frameWatchdogJob = scope.launch {
+            while (isActive && _connectionState.value == KvsConnectionState.CONNECTED) {
+                delay(FRAME_WATCHDOG_INTERVAL_MS)
+
+                if (!hasReceivedAnswer) {
+                    continue
+                }
+
+                val lastFrameTime = lastFrameReceivedAtMs
+                if (lastFrameTime == 0L) {
+                    continue
+                }
+
+                if (System.currentTimeMillis() - lastFrameTime > FRAME_TIMEOUT_MS) {
+                    restartNegotiation("No remote frames for ${FRAME_TIMEOUT_MS}ms")
+                    lastFrameReceivedAtMs = 0L
+                }
+            }
+        }
+    }
+
+    private fun stopFrameWatchdog() {
+        frameWatchdogJob?.cancel()
+        frameWatchdogJob = null
+    }
+
+    private fun scheduleIceDisconnectedRestart() {
+        if (delayedIceRestartJob?.isActive == true) {
+            return
+        }
+        delayedIceRestartJob = scope.launch {
+            delay(ICE_DISCONNECTED_RESTART_DELAY_MS)
+            val pc = peerConnection ?: return@launch
+            if (pc.iceConnectionState() == PeerConnection.IceConnectionState.DISCONNECTED) {
+                restartNegotiation("ICE stayed DISCONNECTED for ${ICE_DISCONNECTED_RESTART_DELAY_MS}ms")
+            }
+        }
+    }
+
+    private fun cancelDelayedIceRestart() {
+        delayedIceRestartJob?.cancel()
+        delayedIceRestartJob = null
+    }
+
+    private fun restartNegotiation(reason: String) {
+        if (_connectionState.value != KvsConnectionState.CONNECTED) {
+            return
+        }
+        if (isRestartingNegotiation) {
+            Log.d(TAG, "Negotiation restart skipped: already restarting")
+            return
+        }
+
+        scope.launch(Dispatchers.Main) {
+            isRestartingNegotiation = true
+            try {
+                Log.d(TAG, "Restarting negotiation: $reason")
+                cancelDelayedIceRestart()
+                hasReceivedAnswer = false
+                lastFrameReceivedAtMs = 0L
+                createPeerConnection()
+                startOfferRetryLoop()
+            } finally {
+                isRestartingNegotiation = false
+            }
+        }
+    }
+
     private fun createAndSendOffer() {
+        if (hasReceivedAnswer) {
+            return
+        }
+
         val pc = peerConnection ?: run {
             Log.e(TAG, "PeerConnection is null")
+            return
+        }
+        if (pc.signalingState() != PeerConnection.SignalingState.STABLE) {
             return
         }
 
@@ -351,12 +489,19 @@ class KvsViewerClient @Inject constructor(
             Log.e(TAG, "PeerConnection is null")
             return
         }
+        if (pc.signalingState() != PeerConnection.SignalingState.HAVE_LOCAL_OFFER) {
+            Log.d(TAG, "Ignoring stale SDP answer in state: ${pc.signalingState()}")
+            return
+        }
 
         val sessionDescription = SessionDescription(SessionDescription.Type.ANSWER, sdp)
         pc.setRemoteDescription(object : SdpObserver {
             override fun onCreateSuccess(desc: SessionDescription?) {}
             override fun onSetSuccess() {
                 Log.d(TAG, "Remote description (answer) set successfully")
+                hasReceivedAnswer = true
+                lastFrameReceivedAtMs = System.currentTimeMillis()
+                stopOfferRetryLoop()
             }
             override fun onCreateFailure(error: String?) {
                 Log.e(TAG, "Set answer create failure: $error")
@@ -381,6 +526,12 @@ class KvsViewerClient @Inject constructor(
     fun disconnect() {
         Log.d(TAG, "Disconnecting")
 
+        stopOfferRetryLoop()
+        stopFrameWatchdog()
+        cancelDelayedIceRestart()
+        hasReceivedAnswer = false
+        lastFrameReceivedAtMs = 0L
+        isRestartingNegotiation = false
         signalingClient.disconnect()
 
         clearRemoteVideoSink()
@@ -397,6 +548,12 @@ class KvsViewerClient @Inject constructor(
         eglBase?.release()
         eglBase = null
         remoteVideoTrack = null
+        hasReceivedAnswer = false
+        stopOfferRetryLoop()
+        stopFrameWatchdog()
+        cancelDelayedIceRestart()
+        lastFrameReceivedAtMs = 0L
+        isRestartingNegotiation = false
         iceServers = emptyList()
         wssEndpoint = null
         channelArn = null
@@ -404,6 +561,9 @@ class KvsViewerClient @Inject constructor(
     }
 
     private fun closePeerConnection() {
+        trackedRemoteVideoSink?.let { trackedSink ->
+            remoteVideoTrack?.removeSink(trackedSink)
+        }
         peerConnection?.close()
         peerConnection?.dispose()
         peerConnection = null

@@ -5,7 +5,6 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -98,10 +97,20 @@ class KvsSignalingClient {
     private fun handleMessage(text: String) {
         scope.launch {
             try {
+                if (text.isBlank()) {
+                    // KVS signaling may send empty keep-alive frames.
+                    return@launch
+                }
+
                 val json = JSONObject(text)
-                val messageType = json.getString("messageType")
-                val messagePayload = json.getString("messagePayload")
+                val messageType = json.optString("messageType", "")
+                val messagePayload = json.optString("messagePayload", "")
                 val senderClientId = json.optString("senderClientId", "")
+
+                if (messageType.isBlank() || messagePayload.isBlank()) {
+                    Log.d(TAG, "Ignoring non-signaling message: $text")
+                    return@launch
+                }
 
                 // Decode base64 payload
                 val decodedPayload = String(Base64.decode(messagePayload, Base64.DEFAULT))
